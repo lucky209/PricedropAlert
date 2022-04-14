@@ -43,7 +43,7 @@ public class PricedropAlertScheduler {
                     priceHistoryDataList = priceHistoryDataList.stream().limit(10).collect(Collectors.toList());
                 log.info("Filtered to {} products", priceHistoryDataList.size());
                 //5. Create image
-                boolean success = imageCreationHelper.createProductImage(priceHistoryDataList, browser);
+                boolean success = imageCreationHelper.createProductImages(priceHistoryDataList, browser);
                 browser.quit();
                 log.info("Is output image(s) created successfully : " + success);
                 //6. Create video

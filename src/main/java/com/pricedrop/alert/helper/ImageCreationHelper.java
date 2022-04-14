@@ -1,5 +1,6 @@
 package com.pricedrop.alert.helper;
 
+import com.pricedrop.alert.helper.constant.ImageConstants;
 import com.pricedrop.alert.helper.constant.PriceHistoryConstants;
 import com.pricedrop.alert.model.PriceHistoryData;
 import com.twelvemonkeys.image.ResampleOp;
@@ -43,7 +44,7 @@ public class ImageCreationHelper {
     private static final String TITLE_COLOR = "#000000";
     private static final String VALUE_COLOR = "#FFBD59";
 
-    public boolean createProductImage(List<PriceHistoryData> productList, WebDriver browser) throws IOException, FontFormatException {
+    public boolean createProductImages(List<PriceHistoryData> productList, WebDriver browser) throws IOException, FontFormatException {
         int count = 1;
         Font alfaSlabOne = Font.createFont(Font.TRUETYPE_FONT, new File(inputResourcePath + "/Alfa Slab One Regular 400.ttf"))
                 .deriveFont(49.4f);
@@ -82,10 +83,29 @@ public class ImageCreationHelper {
             this.drawLogo(g2d, "src/main/resources/input/logo.png", 85, 625);
             g2d.dispose();
             //write image
-            this.writeImage(count, img);
+            this.writeImage(count, img, null);
             count++;
         }
         return true;
+    }
+
+    public void createThumbnail() throws IOException {
+        BufferedImage thumbnail = new BufferedImage(ImageConstants.THUMBNAIL_WIDTH,ImageConstants.THUMBNAIL_HEIGHT,
+                BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = thumbnail.createGraphics();
+        //draw BG color
+        this.drawBackgroundImage(g2d,ImageConstants.THUMBNAIL_BG_COLOR_CODE,
+                thumbnail.getWidth(), thumbnail.getHeight(),thumbnail);
+        //add amazon flipkart logo
+        BufferedImage amazonLogo = ImageIO.read(new File(inputResourcePath + "/amazon-logo.png"));
+        ResampleOp resizeOp = new ResampleOp(900, 490);
+        amazonLogo = resizeOp.filter(amazonLogo, null);
+        TexturePaint texturePaint = new TexturePaint(amazonLogo, new Rectangle(0,0,900,490));
+        g2d.setPaint(texturePaint);
+        g2d.fillRoundRect(0,0,900,900,35,35);
+        g2d.dispose();
+        this.writeImage(null,thumbnail,
+                ImageConstants.THUMBNAIL_OUTPUT_PATH+ImageConstants.THUMBNAIL_FILE_NAME);
     }
 
     private BufferedImage takeProductScreenshotAndResize(PriceHistoryData product, WebDriver browser)
@@ -133,17 +153,29 @@ public class ImageCreationHelper {
         g2d.fillRoundRect(76,56,570,490,35,35);
     }
 
-    private void writeImage(int count, BufferedImage bufferedImage) {
+    private void writeImage(Integer count, BufferedImage bufferedImage, String fullPath) {
         File f;
         try {
-            f = new File(outputResourcePath + "/image-"+ count +".png");
-            if (f.exists()) {
-                boolean success = f.delete();
-                if (success)
-                    log.info("Existing image-"+ count +" deleted successfully...");
+            if (count != null) {
+                f = new File(outputResourcePath + "/image-" + count + ".png");
+                if (f.exists()) {
+                    boolean success = f.delete();
+                    if (success)
+                        log.info("Existing image-" + count + " deleted successfully...");
+                }
+                ImageIO.write(bufferedImage, "png", f);
+                log.info("{} created successfully.", "image-" + count + ".png");
             }
-            ImageIO.write(bufferedImage, "png", f);
-            log.info("{} created successfully.", "image-"+ count +".png");
+            if (fullPath != null) {
+                f = new File(fullPath);
+                if (f.exists()) {
+                    boolean success = f.delete();
+                    if (success)
+                        log.info("Existing image at path {} deleted successfully...", fullPath);
+                }
+                ImageIO.write(bufferedImage, "png", f);
+                log.info("Image at this path {} created successfully.", fullPath);
+            }
         } catch(IOException e){
             System.out.println("Error while creating image : " + e);
         }
